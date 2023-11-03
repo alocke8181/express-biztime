@@ -7,7 +7,7 @@ const { route } = require('../app');
 router.get('/', async (req,res,next) =>{
     try{
         let results = await db.query('SELECT code, name, description FROM companies ORDER BY name');
-        return res.json({companies : results.rows});
+        return res.json({'companies' : results.rows});
     }catch(e){
         return next(e);
     };
@@ -16,15 +16,22 @@ router.get('/', async (req,res,next) =>{
 router.get('/:code', async (req,res,next) => {
     try{
         let code = req.params.code;
-        let results = await db.query(`
+        let compResults = await db.query(`
         SELECT code, name, description
         FROM companies
         WHERE code = $1`,
         [code]);
-        if(results.rows[0] == undefined){
+        let invResults = await db.query(`
+        SELECT id FROM invoices
+        WHERE comp_code = $1`,
+        [code]);
+        if(compResults.rows[0] == undefined){
             throw new ExpErr(`Company Not Found: ${code}`, 404);
         }else{
-            return res.json({company: results.rows[0]});
+            let company = compResults.rows[0];
+            let invoices = invResults.rows;
+            company.invoices = invoices.map(inv => inv.id);
+            return res.json({'company': company});
         };
     }catch(e){
         return next(e);
@@ -65,8 +72,8 @@ router.put('/:code', async (req,res,next) => {
             UPDATE companies
             SET name = $1, description = $2
             WHERE code = $3
-            RETURNING code, name, description`
-            [name, description, code],);
+            RETURNING code, name, description`,
+            [name, description, code]);
             if(results.rows[0] == undefined){
                 throw new ExpErr(`Company Not Found: ${code}`, 404);
             }else{
@@ -90,7 +97,7 @@ router.delete('/:code', async (req,res,next) =>{
         if(results.rows[0] == undefined){
             throw new ExpErr(`Company Not Found: ${code}`, 404);
         }else{
-            return res.json({status : 'deleted'});
+            return res.json({'status' : 'deleted'});
         };
     }catch(e){
         return next(e);
