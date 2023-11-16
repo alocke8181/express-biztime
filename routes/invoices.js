@@ -54,14 +54,14 @@ router.post('/', async (req,res,next) =>{
 router.put('/:id', async (req,res,next) => {
     try{
         let id = req.params.id;
-        let amt = req.body.amy;
+        let amt = req.body.amt;
         if(amt == undefined){
             throw new ExpErr('Missing Property', 500);
         }else{
             let results = await db.query(`
             UPDATE invoices
             SET amt = $1
-            WHERE code = $2
+            WHERE id = $2
             RETURNING *`,
             [amt, id]);
             if(results.rows[0] == undefined){
