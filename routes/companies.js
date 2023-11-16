@@ -1,4 +1,5 @@
 const express = require('express');
+const slugify = require('slugify');
 const router = new express.Router();
 let db = require('../db');
 let ExpErr = require('../expressError');
@@ -40,12 +41,12 @@ router.get('/:code', async (req,res,next) => {
 
 router.post('/', async (req,res,next) =>{
     try{
-        let code = req.body.code;
         let name = req.body.name;
         let description = req.body.description;
-        if(code == undefined || name == undefined || description == undefined){
+        if(name == undefined || description == undefined){
             throw new ExpErr('Missing Property', 500);
         }else{
+            let code = slugify(name,{replacement : '-', lower : true, remove : /[*+~.()'"!:@]/g});
             let results = await db.query(`
             INSERT INTO companies
             (code, name, description)

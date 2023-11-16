@@ -10,13 +10,13 @@ let testInv;
 beforeEach(async ()=>{
     let compResult = await db.query(`
     INSERT INTO
-    companies (code, name, description) VALUES ('test','Test Company','This is a test company')
+    companies (code, name, description) VALUES ('test-company','Test Company','This is a test company')
     RETURNING code, name, description`);
     testComp = compResult.rows[0];
 
     let invResult = await db.query(`
     INSERT INTO
-    invoices (comp_code, amt) VALUES ('test', 100)
+    invoices (comp_code, amt) VALUES ('test-company', 100)
     RETURNING *;`);
     testInv = invResult.rows[0];
 });
@@ -38,12 +38,12 @@ describe('GET tests', ()=>{
         expect(res.body).toEqual({companies : [testComp]});
     });
     test('Test Get /[code]',async ()=>{
-        let res = await request(app).get('/companies/test');
+        let res = await request(app).get('/companies/test-company');
         expect(res.statusCode).toEqual(200);
         expect(res.body).not.toBeNull();
         expect(res.body).toEqual({
             company : {
-                code : 'test',
+                code : 'test-company',
                 name : 'Test Company',
                 description : 'This is a test company',
                 invoices : [testInv.id]
@@ -60,29 +60,22 @@ describe('GET tests', ()=>{
 describe('POST tests', ()=>{
     test('Test valid POST', async ()=>{
         const testCompTwo = {
-            code : 'test2',
-            name : 'Test Company 2',
+            code : 'test-company-2',
+            name : 'Test Company *+~.()"!:@ 2',
             description : 'This is another test company'
         };
-        let res = await request(app).post('/companies').send(testCompTwo);
+        let res = await request(app).post('/companies').send({
+            name : 'Test Company *+~.()"!:@ 2',
+            description : 'This is another test company'
+        });
         expect(res.statusCode).toEqual(201);
         expect(res.body).not.toBeNull();
         expect(res.body).toEqual({
             company : testCompTwo
         });
     });
-    test('Test invalid POST no code', async ()=>{
-        let res = await request(app).post('/companies').send({
-            code : undefined,
-            name : 'asdf',
-            description : 'asdfasdfasdfasdf'
-        });
-        expect(res.statusCode).toEqual(500);
-        expect(res.body.message).toEqual('Missing Property');
-    });
     test('Test invalid POST no name', async ()=>{
         let res = await request(app).post('/companies').send({
-            code : 'asdf',
             name : undefined,
             description : 'asdfasdfasdfasdf'
         });
@@ -91,7 +84,6 @@ describe('POST tests', ()=>{
     });
     test('Test invalid POST no desc', async ()=>{
         let res = await request(app).post('/companies').send({
-            code : 'asdf',
             name : 'ASDF',
             description : undefined
         });
@@ -103,18 +95,20 @@ describe('POST tests', ()=>{
 describe('PUT Tests', ()=>{
     test('Test valid PUT', async ()=>{
         const updatedComp = {
-            code : 'test',
+            code : 'test-company',
             name : 'New Test Company',
             description : 'This is an updated test company'
         };
-        let res = await request(app).put('/companies/test').send(updatedComp);
+        let res = await request(app).put('/companies/test-company').send({
+            name : 'New Test Company',
+            description : 'This is an updated test company'
+        });
         expect(res.statusCode).toEqual(200);
         expect(res.body).not.toBeNull();
         expect(res.body).toEqual({company : updatedComp});
     });
     test('Test invalid PUT missing code', async ()=>{
         const updatedComp = {
-            code : 'asdf',
             name : 'New Test Company',
             description : 'This is an updated test company'
         };
@@ -123,8 +117,7 @@ describe('PUT Tests', ()=>{
         expect(res.body.message).toEqual('Company Not Found: asdf');
     });
     test('Test invalid PUT no name', async ()=>{
-        let res = await request(app).put('/companies/test').send({
-            code : 'test',
+        let res = await request(app).put('/companies/test-company').send({
             name : undefined,
             description : 'asdfasdfasdfasdf'
         });
@@ -132,8 +125,7 @@ describe('PUT Tests', ()=>{
         expect(res.body.message).toEqual('Missing Property');
     });
     test('Test invalid PUT no desc', async ()=>{
-        let res = await request(app).put('/companies/test').send({
-            code : 'test',
+        let res = await request(app).put('/companies/test-company').send({
             name : 'Test Company Updated',
             description : undefined
         });
@@ -144,7 +136,7 @@ describe('PUT Tests', ()=>{
 
 describe('DELETE Tests', ()=>{
     test('Test valid DELETE', async ()=>{
-        let res = await request(app).delete('/companies/test');
+        let res = await request(app).delete('/companies/test-company');
         expect(res.statusCode).toEqual(200);
         expect(res.body).not.toBeNull();
         expect(res.body).toEqual({status : 'deleted'});

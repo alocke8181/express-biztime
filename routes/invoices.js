@@ -55,19 +55,39 @@ router.put('/:id', async (req,res,next) => {
     try{
         let id = req.params.id;
         let amt = req.body.amt;
-        if(amt == undefined){
+        let paid = req.body.paid;
+        if(amt == undefined || paid == undefined){
             throw new ExpErr('Missing Property', 500);
         }else{
             let results = await db.query(`
             UPDATE invoices
-            SET amt = $1
-            WHERE id = $2
+            SET amt = $1, paid = $2
+            WHERE id = $3
             RETURNING *`,
-            [amt, id]);
+            [amt, paid, id]);
             if(results.rows[0] == undefined){
                 throw new ExpErr(`Invoice Not Found: ${id}`, 404);
             }else{
-                return res.json({'invoice' : results.rows[0]});
+                if(results.rows[0].paid_date == null && paid == true){
+                    let d = new Date().toISOString();
+                    results = await db.query(`
+                    UPDATE invoices
+                    SET paid_date = $1
+                    WHERE id = $2
+                    RETURNING *`,
+                    [d, id]);
+                    return res.json({'invoice' : results.rows[0]});
+                }else if(results.rows[0].paid_date != null && paid == false){
+                    results = await db.query(`
+                    UPDATE invoices
+                    SET paid_date = $1
+                    WHERE id = $2
+                    RETURNING *`,
+                    [null, id]);
+                    return res.json({'invoice' : results.rows[0]});
+                }else if(results.rows[0].paid_date != null && paid == true){
+                    return res.json({'invoice' : results.rows[0]});
+                };
             };
         };
     }catch(e){

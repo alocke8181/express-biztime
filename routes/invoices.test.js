@@ -82,19 +82,44 @@ describe('POST tests', ()=>{
 });
 
 describe('PUT Tests', ()=>{
-    test('Test valid PUT', async ()=>{
-        let res = await request(app).put(`/invoices/${testInv.id}`).send({amt : 300});
+    test('Test valid PUT making payment', async ()=>{
+        let res = await request(app).put(`/invoices/${testInv.id}`).send({amt : 300, paid : true});
         expect(res.statusCode).toEqual(200);
         expect(res.body).not.toBeNull();
         expect(res.body.invoice.amt).toEqual(300);
+        expect(res.body.invoice.paid).toEqual(true);
+        expect(res.body.invoice.paid_date).not.toBeNull();
+    });
+    test('Test valid PUT removing payment', async ()=>{
+        let resFirst = await request(app).put(`/invoices/${testInv.id}`).send({amt : 200, paid : true});
+        let res = await request(app).put(`/invoices/${testInv.id}`).send({amt : 300, paid : false});
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).not.toBeNull();
+        expect(res.body.invoice.amt).toEqual(300);
+        expect(res.body.invoice.paid).toEqual(false);
+        expect(res.body.invoice.paid_date).toBeNull();
+    });
+    test('Test valid PUT updating payment', async ()=>{
+        let resFirst = await request(app).put(`/invoices/${testInv.id}`).send({amt : 200, paid : true});
+        let res = await request(app).put(`/invoices/${testInv.id}`).send({amt : 300, paid : true});
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).not.toBeNull();
+        expect(res.body.invoice.amt).toEqual(300);
+        expect(res.body.invoice.paid).toEqual(true);
+        expect(res.body.invoice.paid_date).not.toBeNull();
     });
     test('Test invalid PUT missing id', async ()=>{
-        let res = await request(app).put('/invoices/999999').send({amt : 300});
+        let res = await request(app).put('/invoices/999999').send({amt : 300, paid : true});
         expect(res.statusCode).toEqual(404);
         expect(res.body.message).toEqual('Invoice Not Found: 999999');
     });
     test('Test invalid PUT no amt', async ()=>{
-        let res = await request(app).put(`/invoices/${testInv.id}`).send({amt : undefined});
+        let res = await request(app).put(`/invoices/${testInv.id}`).send({amt : undefined, paid : true});
+        expect(res.statusCode).toEqual(500);
+        expect(res.body.message).toEqual('Missing Property');
+    });
+    test('Test invalid PUT no paid', async ()=>{
+        let res = await request(app).put(`/invoices/${testInv.id}`).send({amt : 1000, paid : undefined});
         expect(res.statusCode).toEqual(500);
         expect(res.body.message).toEqual('Missing Property');
     });
