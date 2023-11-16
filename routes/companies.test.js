@@ -19,11 +19,24 @@ beforeEach(async ()=>{
     invoices (comp_code, amt) VALUES ('test-company', 100)
     RETURNING *;`);
     testInv = invResult.rows[0];
+
+    let indResult = await db.query(`
+    INSERT INTO
+    industries (code, field) VALUES ('test-ind','Test Industry')
+    RETURNING *;`);
+    testInd = indResult.rows[0];
+
+    let indCompResult = await db.query(`
+    INSERT INTO
+    ind_comp (ind_code, comp_code) VALUES ('test-ind', 'test-company')
+    RETURNING *;`);
+    testIndComp = indCompResult.rows[0];
 });
 
 afterEach(async ()=>{
     await db.query('DELETE FROM companies');
     await db.query('DELETE FROM invoices');
+    await db.query('DELETE FROM industries');
 });
 
 afterAll(async ()=>{
@@ -46,7 +59,8 @@ describe('GET tests', ()=>{
                 code : 'test-company',
                 name : 'Test Company',
                 description : 'This is a test company',
-                invoices : [testInv.id]
+                invoices : [testInv.id],
+                industries : [testInd.field]
             }
         });
     });

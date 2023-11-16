@@ -26,12 +26,21 @@ router.get('/:code', async (req,res,next) => {
         SELECT id FROM invoices
         WHERE comp_code = $1`,
         [code]);
+        let indResults = await db.query(`
+        SELECT ind.field
+        FROM industries AS ind
+        JOIN ind_comp AS ic
+        ON ind.code = ic.ind_code
+        WHERE ic.comp_code = $1
+        `,[code]);
         if(compResults.rows[0] == undefined){
             throw new ExpErr(`Company Not Found: ${code}`, 404);
         }else{
             let company = compResults.rows[0];
             let invoices = invResults.rows;
+            let industries = indResults.rows;
             company.invoices = invoices.map(inv => inv.id);
+            company.industries = industries.map(ind => ind.field);
             return res.json({'company': company});
         };
     }catch(e){
